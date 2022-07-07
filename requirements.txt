@@ -1,0 +1,4 @@
+wxpython==4.1.1
+peewee==3.15.0
+oss2==2.15.0
+Pyperclip==1.8.2
