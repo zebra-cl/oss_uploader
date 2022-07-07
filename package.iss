@@ -1,5 +1,6 @@
 #define MyAppName "阿里云OSS图床"
 #define MyAppVersion "1.0"
+; 下面两项，请根据情况修改
 #define PythonPath "C:\Program Files (x86)\Python37-32"
 #define ProgramPath "F:\我的\桌面\oss_uploader"
 
