@@ -1,0 +1,2 @@
+# oss_uploader
+使用wxpython编写的上传文件工具，利用阿里云的OSS作为图床
