@@ -140,7 +140,7 @@ class MyFrame(MainFrame):
         else:
             Config.set_conf('path', '')
 
-        wx.MessageBox('保存成功', caption='提示')
+        self.m_statusBar1.SetStatusText('保存成功..', 0)
 
     def evt_m_button_upload_file_OnButtonClick(self, event):
         # 点击 从文件上传
@@ -160,7 +160,7 @@ class MyFrame(MainFrame):
             else:
                 # 保存上传记录
                 UploadHistory(file=os.path.basename(file), file_url=resp.response.url).save()
-                # wx.MessageBox('上传成功', caption='提示')
+                self.m_statusBar1.SetStatusText('上传成功..', 0)
                 self.refresh_history_table()
 
     def evt_m_button_upload_paste_OnButtonClick(self, event):
@@ -184,6 +184,7 @@ class MyFrame(MainFrame):
             else:
                 # 保存上传记录
                 UploadHistory(file=file, file_url=resp.response.url).save()
+                self.m_statusBar1.SetStatusText('上传成功..', 0)
                 self.refresh_history_table()
         else:
             wx.MessageBox('粘贴板中无图片', caption='提示')
@@ -196,6 +197,7 @@ class MyFrame(MainFrame):
             # 删除
             self.query[event.Row].delete_instance()
             self.refresh_history_table()
+            self.m_statusBar1.SetStatusText('删除成功..', 0)
         elif event.Col == 3:
             # 复制
             if Config.get_conf('copyType') == '0':
@@ -204,6 +206,7 @@ class MyFrame(MainFrame):
                 pyperclip.copy(f"[{self.query[event.Row].file}]({self.query[event.Row].file_url})")
             else:
                 pyperclip.copy(self.query[event.Row].file_url)
+            self.m_statusBar1.SetStatusText('复制成功..', 0)
 
 
 if __name__ == '__main__':
