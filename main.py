@@ -6,6 +6,7 @@ import oss2
 import pyperclip
 import wx
 from PIL import ImageGrab
+from wx.adv import TaskBarIcon, TBI_DEFAULT_TYPE
 
 from frames import MainFrame
 from models import Config, UploadHistory
@@ -52,6 +53,60 @@ def get_remote_path(file):
     return remote_path
 
 
+class MyTaskBarIcon(TaskBarIcon):
+    def __init__(self, frame, iconType=TBI_DEFAULT_TYPE):
+        super().__init__(iconType)
+        self.frame = frame
+        self.SetIcon(wx.Icon('./aliyun.png'), tooltip='阿里云OSS图床')
+
+    def CreatePopupMenu(self):
+        m_menu_taskbarIcon = wx.Menu()
+
+        # 添加菜单项
+        m_menuItem_show_frame = wx.MenuItem(m_menu_taskbarIcon, wx.ID_ANY, u"显示主窗口", wx.EmptyString,
+                                            wx.ITEM_NORMAL)
+        m_menuItem_copy_last = wx.MenuItem(m_menu_taskbarIcon, wx.ID_ANY, u"复制最新的一条", wx.EmptyString,
+                                           wx.ITEM_NORMAL)
+        m_menuItem_upload_file = wx.MenuItem(m_menu_taskbarIcon, wx.ID_ANY, u"从文件上传", wx.EmptyString,
+                                             wx.ITEM_NORMAL)
+        m_menuItem_upload_paste = wx.MenuItem(m_menu_taskbarIcon, wx.ID_ANY, u"从粘贴板上传", wx.EmptyString,
+                                              wx.ITEM_NORMAL)
+        m_menuItem_quit = wx.MenuItem(m_menu_taskbarIcon, wx.ID_ANY, u"退出", wx.EmptyString, wx.ITEM_NORMAL)
+
+        m_menu_taskbarIcon.Append(m_menuItem_show_frame)
+        m_menu_taskbarIcon.Append(m_menuItem_copy_last)
+        m_menu_taskbarIcon.AppendSeparator()
+        m_menu_taskbarIcon.Append(m_menuItem_upload_file)
+        m_menu_taskbarIcon.Append(m_menuItem_upload_paste)
+        m_menu_taskbarIcon.AppendSeparator()
+        m_menu_taskbarIcon.Append(m_menuItem_quit)
+
+        # 添加事件
+        self.Bind(wx.EVT_MENU, self.evt_show_frame, id=m_menuItem_show_frame.GetId())
+        self.Bind(wx.EVT_MENU, self.evt_copy_last, id=m_menuItem_copy_last.GetId())
+        self.Bind(wx.EVT_MENU, self.evt_upload_file, id=m_menuItem_upload_file.GetId())
+        self.Bind(wx.EVT_MENU, self.evt_upload_paste, id=m_menuItem_upload_paste.GetId())
+        self.Bind(wx.EVT_MENU, self.evt_quit, id=m_menuItem_quit.GetId())
+
+        return m_menu_taskbarIcon
+
+    def evt_show_frame(self, event):
+        self.frame.Show()
+
+    def evt_copy_last(self, event):
+        self.frame.copy_last_history()
+
+    def evt_upload_file(self, event):
+        self.frame.evt_m_button_upload_file_OnButtonClick(event)
+
+    def evt_upload_paste(self, event):
+        self.frame.evt_m_button_upload_paste_OnButtonClick(event)
+
+    def evt_quit(self, event):
+        self.frame.Destroy()
+        self.Destroy()
+
+
 class MyFrame(MainFrame):
     query = None
 
@@ -72,6 +127,9 @@ class MyFrame(MainFrame):
         self.m_textCtrl_bucket.Value = Config.get_conf('bucket')
         self.m_checkBox_fixpath.Value = Config.get_conf('fixpath') == 'True'
         self.m_textCtrl_path.Value = Config.get_conf('path')
+
+        # 创建托盘
+        self.m_taskBarIcon = MyTaskBarIcon(self)
 
         # 设置表格字段
         self.m_grid_history.SetColLabelValue(0, '文件名')
@@ -107,6 +165,9 @@ class MyFrame(MainFrame):
             self.m_grid_history.SetCellTextColour(index, 3, '#2440b3')  # 字体颜色
             self.m_grid_history.SetCellAlignment(index, 3, wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)  # 居中
 
+    def evt_OnClose(self, event):
+        self.Hide()
+
     def evt_m_radioBox_copyType_OnRadioBox(self, event):
         # 更改 复制形式
         super().evt_m_radioBox_copyType_OnRadioBox(event)
@@ -140,7 +201,7 @@ class MyFrame(MainFrame):
         else:
             Config.set_conf('path', '')
 
-        self.m_statusBar1.SetStatusText('保存成功..', 0)
+        wx.MessageBox('保存成功', caption='提示')
 
     def evt_m_button_upload_file_OnButtonClick(self, event):
         # 点击 从文件上传
@@ -160,7 +221,7 @@ class MyFrame(MainFrame):
             else:
                 # 保存上传记录
                 UploadHistory(file=os.path.basename(file), file_url=resp.response.url).save()
-                self.m_statusBar1.SetStatusText('上传成功..', 0)
+                self.m_taskBarIcon.ShowBalloon('提示', '上传成功')
                 self.refresh_history_table()
 
     def evt_m_button_upload_paste_OnButtonClick(self, event):
@@ -184,7 +245,7 @@ class MyFrame(MainFrame):
             else:
                 # 保存上传记录
                 UploadHistory(file=file, file_url=resp.response.url).save()
-                self.m_statusBar1.SetStatusText('上传成功..', 0)
+                self.m_taskBarIcon.ShowBalloon('提示', '上传成功')
                 self.refresh_history_table()
         else:
             wx.MessageBox('粘贴板中无图片', caption='提示')
@@ -197,7 +258,7 @@ class MyFrame(MainFrame):
             # 删除
             self.query[event.Row].delete_instance()
             self.refresh_history_table()
-            self.m_statusBar1.SetStatusText('删除成功..', 0)
+            self.m_taskBarIcon.ShowBalloon('提示', '删除成功')
         elif event.Col == 3:
             # 复制
             if Config.get_conf('copyType') == '0':
@@ -206,7 +267,17 @@ class MyFrame(MainFrame):
                 pyperclip.copy(f"[{self.query[event.Row].file}]({self.query[event.Row].file_url})")
             else:
                 pyperclip.copy(self.query[event.Row].file_url)
-            self.m_statusBar1.SetStatusText('复制成功..', 0)
+            self.m_taskBarIcon.ShowBalloon('提示', '复制成功')
+
+    def copy_last_history(self):
+        # 复制最近的一条
+        if Config.get_conf('copyType') == '0':
+            pyperclip.copy(self.query[0].file_url)
+        elif Config.get_conf('copyType') == '1':
+            pyperclip.copy(f"[{self.query[0].file}]({self.query[0].file_url})")
+        else:
+            pyperclip.copy(self.query[0].file_url)
+        self.m_taskBarIcon.ShowBalloon('提示', '复制成功')
 
 
 if __name__ == '__main__':

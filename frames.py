@@ -163,11 +163,11 @@ class MainFrame ( wx.Frame ):
 
 		self.SetSizer( bSizer1 )
 		self.Layout()
-		self.m_statusBar1 = self.CreateStatusBar( 1, wx.STB_SIZEGRIP, wx.ID_ANY )
 
 		self.Centre( wx.BOTH )
 
 		# Connect Events
+		self.Bind( wx.EVT_CLOSE, self.evt_OnClose )
 		self.m_button_upload_file.Bind( wx.EVT_BUTTON, self.evt_m_button_upload_file_OnButtonClick )
 		self.m_button_upload_paste.Bind( wx.EVT_BUTTON, self.evt_m_button_upload_paste_OnButtonClick )
 		self.m_radioBox_copyType.Bind( wx.EVT_RADIOBOX, self.evt_m_radioBox_copyType_OnRadioBox )
@@ -180,6 +180,9 @@ class MainFrame ( wx.Frame ):
 
 
 	# Virtual event handlers, override them in your derived class
+	def evt_OnClose( self, event ):
+		event.Skip()
+
 	def evt_m_button_upload_file_OnButtonClick( self, event ):
 		event.Skip()
 
